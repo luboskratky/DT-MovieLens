@@ -32,5 +32,5 @@ Surové dáta sú usporiadané v relačnom modeli, ktorý je znázornený na **e
 </p>
 
 ---
-## **2 Dimenzionálny model**
+## **2. Dimenzionálny model**
 
