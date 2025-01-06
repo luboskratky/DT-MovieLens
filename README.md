@@ -26,7 +26,7 @@ Zdrojové dáta pochádzajú z datasetu dostupného [tu](https://grouplens.org/d
 Surové dáta sú usporiadané v relačnom modeli, ktorý je znázornený na **entitno-relačnom diagrame (ERD)**:
 
 <p align="center">
-  <img ******>
+  <img src="MovieLens_ERD.png">
   <br>
   <em>Obrázok 1 Entitno-relačná schéma MovieLens</em>
 </p>
@@ -44,7 +44,7 @@ Navrhnutý bol **hviezdicový model (star schema)**, pre efektívnu analýzu kde
 Štruktúra hviezdicového modelu je znázornená na diagrame nižšie. Diagram ukazuje prepojenia medzi faktovou tabuľkou a dimenziami, čo zjednodušuje pochopenie a implementáciu modelu.
 
 <p align="center">
-  <img *****>
+  <img src="starschema.png">
   <br>
   <em>Obrázok 2 Schéma hviezdy pre MovieLens</em>
 </p>
