@@ -34,3 +34,19 @@ Surové dáta sú usporiadané v relačnom modeli, ktorý je znázornený na **e
 ---
 ## **2. Dimenzionálny model**
 
+Navrhnutý bol **hviezdicový model (star schema)**, pre efektívnu analýzu kde centrálny bod predstavuje faktová tabuľka **`fact_ratings`** a dimenzie:
+- **`dim_movies`**: Obsahuje informácie o filmoch (názov, rok vydania).
+    - **`subdim_genres`**: Obsahuje žánre filmov filmoch (názov).
+- **`dim_users`**: Obsahuje demografické údaje o používateľoch(vek, vekové kategórie, pohlavie, povolanie).
+- **`dim_date`**: Zahrňuje informácie o dátumoch hodnotení (deň, mesiac, rok,).
+- **`dim_time`**: Obsahuje podrobné časové údaje (hodina, minuta, sekunda).
+
+Štruktúra hviezdicového modelu je znázornená na diagrame nižšie. Diagram ukazuje prepojenia medzi faktovou tabuľkou a dimenziami, čo zjednodušuje pochopenie a implementáciu modelu.
+
+<p align="center">
+  <img *****>
+  <br>
+  <em>Obrázok 2 Schéma hviezdy pre MovieLens</em>
+</p>
+
+
