@@ -163,7 +163,7 @@ ETL proces v Snowflake umožnil transformáciu pôvodných údajov z formátu `.
 Dashboard obsahuje `päť vizualizácií`, ktoré poskytujú prehľad o kľúčových metrikách a trendoch súvisiacich s filmami, používateľmi a hodnoteniami. Tieto vizualizácie odpovedajú na zásadné otázky a pomáhajú lepšie porozumieť správaniu používateľov a ich preferenciám.
 
 <p align="center">
-  <img ***>
+  <img src="dashboard.png">
   <br>
   <em>Obrázok 3 Dashboard MovieLens datasetu</em>
 </p>
