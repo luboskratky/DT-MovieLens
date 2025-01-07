@@ -5,7 +5,7 @@ Tento repozitár obsahuje ETL proces implementovaný v Snowflake na spracovanie 
 ---
 ## **1. Úvod a popis zdrojových dát**
 
-Cieľom projektu je preskúmať hodnotenia filmov a demografické údaje používateľov, aby sa získali poznatky o ich preferenciách a sledovali trendy vo filmovej obľúbenosti.
+Cieľom semestrálneho projektu je preskúmať hodnotenia filmov a demografické údaje používateľov, aby sa získali poznatky o ich preferenciách a sledovali trendy vo filmovej obľúbenosti.
 
 Zdrojové dáta pochádzajú z datasetu dostupného [tu](https://grouplens.org/datasets/movielens/). Dataset obsahuje osem hlavných tabuliek:
 - `age_groups`
@@ -83,9 +83,34 @@ V prípade nekonzistentných záznamov bol použitý parameter `ON_ERROR = 'CONT
 ---
 ### **3.2 Transformácia dát (Transform)**
 
-V tejto fáze boli údaje zo staging tabuliek spracované, transformované a doplnené o ďalšie informácie. Hlavným cieľom bolo pripraviť dimenzionálne a faktové tabuľky na uľahčenie a zefektívnenie analýzy.
+V tejto fáze boli údaje zo staging tabuliek spracované, transformované a doplnené o ďalšie informácie. Táto štruktúra umožňuje efektívnu analýzu dát. Každá tabuľka má špecifickú úlohu, pričom spolupracujú na optimalizácii výkonnosti dotazov a prehľadnosti dát.
 
-
+#### **dim_users**
+Táto tabuľka obsahuje informácie o používateľoch. Používajú sa údaje zo staging tabuľky users_stagin.
+#### Príklad kódu dim_users:
+```sql
+CREATE OR REPLACE TABLE dim_users AS
+SELECT
+    users_staging.id AS dim_usersId,
+    users_staging.age AS age,
+    users_staging.gender AS gender,
+    occupations_staging.name AS occupation,
+    users_staging.zip_code AS zip_code,
+    CASE
+        WHEN users_staging.age < 18 THEN 'Under 18'
+        WHEN users_staging.age BETWEEN 18 AND 24 THEN '18-24'
+        WHEN users_staging.age BETWEEN 25 AND 34 THEN '25-34'
+        WHEN users_staging.age BETWEEN 35 AND 44 THEN '35-44'
+        WHEN users_staging.age BETWEEN 45 AND 54 THEN '45-54'
+        WHEN users_staging.age >= 55 THEN '55+'
+        ELSE 'Unknown'
+    END AS age_group,
+FROM users_staging
+LEFT JOIN occupations_staging ON users_staging.occupation_id = occupations_staging.id
+LEFT JOIN age_group_staging ON users_staging.age = age_group_staging.id;
+```
+#### **dim_movie**
+Obsahuje základné údaje o filmoch.
 #### Príklad kódu dim_movie:
 ```sql
 CREATE OR REPLACE TABLE dim_movie AS
@@ -95,7 +120,6 @@ SELECT
     movies_staging.release_year
 FROM movies_staging;
 ```
-
 Faktová tabuľka `fact_ratings` zaznamenáva hodnotenia a prepojenia na všetky príslušné dimenzie.
 ```sql
 CREATE OR REPLACE TABLE fact_rating AS
@@ -133,3 +157,98 @@ DROP TABLE IF EXISTS movies_staging;
 
 ETL proces v Snowflake umožnil transformáciu pôvodných údajov z formátu `.csv` do viacdimenzionálneho hviezdicového modelu. Tento proces zahŕňal čistenie, obohacovanie a reorganizáciu dát. Výsledný model poskytuje základ pre analýzu preferencií a správania používateľov, čím umožňuje vytváranie vizualizácií a reportov.
 
+---
+## **4 Vizualizácia dát**
+
+Dashboard obsahuje `päť vizualizácií`, ktoré poskytujú prehľad o kľúčových metrikách a trendoch súvisiacich s filmami, používateľmi a hodnoteniami. Tieto vizualizácie odpovedajú na zásadné otázky a pomáhajú lepšie porozumieť správaniu používateľov a ich preferenciám.
+
+<p align="center">
+  <img ***>
+  <br>
+  <em>Obrázok 3 Dashboard MovieLens datasetu</em>
+</p>
+
+---
+### **Graf 1: Najviac hodnotené filmy (Top 10 filmov)**
+Táto vizualizácia zobrazuje 10 filmov s najväčším počtom hodnotení. Umožňuje identifikovať najpopulárnejšie tituly medzi používateľmi. Tieto informácie môžu byť užitočné na odporúčanie kníh alebo marketingové kampane.
+
+```sql
+SELECT
+    m.title,
+    AVG(f.rating) AS avg_rating
+FROM 
+    FACT_RATING f
+JOIN 
+    dim_movie m ON f.dim_movieid = m.dim_movieid
+GROUP BY 
+    m.title
+ORDER BY 
+    avg_rating DESC
+LIMIT 10;
+```
+---
+### **Graf 2: Najobľúbenejšie žánre filmov podľa vekových kategórií**
+Táto vizualizácia zobrazuje obľúbenosť rôznych žánrov filmov medzi používateľmi rozdelenými do vekových skupín. Cieľom je identifikovať, ktoré žánre sú preferované v rôznych vekových kategóriách, čo môže pomôcť v lepšom cielení obsahu a odporúčaní filmov.
+
+```sql
+SELECT 
+    u.age_group AS age_group,
+    g.genre AS genre,
+    COUNT(f.fact_ratingId) AS total_ratings
+FROM FACT_RATING f
+JOIN dim_users u ON f.dim_usersId = u.dim_usersId
+JOIN bridge b ON f.dim_movieId = b.dim_movie_dim_movieId
+JOIN subdim_genres g ON b.subdim_genres_subdim_genresId = g.subdim_genresId
+GROUP BY u.age_group, g.genre
+ORDER BY total_ratings DESC;
+```
+---
+### **Graf 3: Priemerné hodnotenie filmov podľa roku vydania**
+Táto vizualizácia ukazuje, ako sa priemerné hodnotenie filmov líši podľa roku ich vydania. Cieľom je zistiť, či sú novšie filmy hodnotené lepšie ako staršie, alebo či existuje nejaký trend v hodnotení filmov v priebehu času.
+
+```sql
+SELECT 
+    m.release_year AS release_year,
+    AVG(f.rating) AS avg_rating
+FROM FACT_RATING f
+JOIN dim_movie m ON f.dim_movieId = m.dim_movieId
+GROUP BY m.release_year
+ORDER BY m.release_year;
+
+```
+---
+### **Graf 4: Počet hodnotení podľa času dňa**
+Táto vizualizácia ukazuje rozdelenie počtu hodnotení počas rôznych častí dňa (hodiny). Pomáha identifikovať, kedy sú používatelia najaktívnejší a kedy by mohli byť organizované špeciálne kampane alebo akcie.
+
+```sql
+SELECT 
+    t.hour AS hour,
+    COUNT(f.fact_ratingId) AS total_ratings
+FROM FACT_RATING f
+JOIN dim_time t ON f.dim_timeId = t.dim_timeId
+GROUP BY t.hour
+ORDER BY t.hour;
+
+```
+---
+### **Graf 5: Najviac hodnotené filmy podľa pohlavia používateľov**
+Táto analýza ukazuje, ktoré filmy sú najviac hodnotené mužmi a ženami. Pomáha pochopiť rozdiely v preferenciách medzi pohlaviami, čo môže byť užitočné pri personalizácii odporúčaní.
+
+```sql
+SELECT 
+    m.title AS title,
+    u.gender AS gender,
+    COUNT(f.fact_ratingId) AS total_ratings
+FROM FACT_RATING f
+JOIN dim_movie m ON f.dim_movieId = m.dim_movieId
+JOIN dim_users u ON f.dim_usersId = u.dim_usersId
+GROUP BY m.title, u.gender
+ORDER BY total_ratings DESC;
+
+```
+
+Dashboard ponúka komplexný prehľad o dátach a zodpovedá kľúčové otázky súvisiace s čitateľskými preferenciami a správaním používateľov. Vizualizácie uľahčujú interpretáciu dát a môžu slúžiť na zlepšenie odporúčacích systémov a marketingových stratégií.
+
+---
+
+**Autor:** Ľuboš Krátky
